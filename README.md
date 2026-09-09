@@ -166,3 +166,5 @@ Tests ครอบคลุม scoring/validation, image metadata, strict filter
 - Demo ใช้ OSM สาธารณะพร้อม attribution; เลือก tile service ตามปริมาณการใช้งานหากเปิดกว้าง UI ภาษาไทยเป็นหลัก ยังไม่มีสวิตช์ภาษา
 
 เครดิตภาพ Demo ดู `/credits` และ `data/locations.json` หากดาวน์โหลดใหม่ใช้ `node scripts/fetch-demo.mjs` ไม่ต้องรันเพื่อเริ่มเกม
+#   G E O - l o o k n a m  
+ 
