@@ -44,6 +44,7 @@ export type RoomState = {
   deadline: number | null;
   serverNow: number;
   image: string | null;
+  panorama?: { panoId: string; heading: number };
   ownGuess: Point | null;
   results: RoundResult[];
   message?: string;

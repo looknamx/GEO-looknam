@@ -158,7 +158,7 @@ describe("authoritative two-player Socket.IO flow", () => {
     expect(states.get(a)?.round).toBe(1);
     expect(states.get(a)?.selectionIssue?.kind).toBe("pool");
   });
-  it("hides Google panorama identifiers and synchronizes image failure to both players", async () => {
+  it("shares only the current interactive panorama and synchronizes failure to both players", async () => {
     vi.stubEnv("GOOGLE_MAPS_SERVER_KEY", "server-secret-sentinel");
     provider.getNextLocation = async () => ({
       ...location,
@@ -170,15 +170,31 @@ describe("authoritative two-player Socket.IO flow", () => {
     await start(a, b);
     const state = states.get(a)!;
     expect(JSON.stringify(state)).not.toMatch(
-      /private-pano|13\.7437|private-answer|server-secret-sentinel/,
+      /13\.7437|private-answer|server-secret-sentinel/,
     );
+    expect(state.panorama).toEqual({ panoId: "private-pano", heading: 0 });
+    expect(states.get(b)?.panorama).toEqual(state.panorama);
     game.sceneFailed(state.image!.split("/").at(-1)!);
     await vi.waitFor(() => expect(states.get(b)?.mode).toBe("demo"));
     expect(states.get(b)?.phase).toBe("lobby");
+    expect(states.get(b)?.panorama).toBeUndefined();
     expect(states.get(b)?.players.every((p) => !p.ready && p.score === 0)).toBe(
       true,
     );
     expect(game.scene(state.image!.split("/").at(-1)!)).toBeUndefined();
+  });
+  it("scores the original Google location and removes panorama data after reveal", async () => {
+    provider.getNextLocation = async () => ({
+      ...location, mode: "google", key: "google:start", panoId: "start-pano", heading: 70,
+    });
+    const { a, b } = await lobby();
+    await start(a, b);
+    expect(states.get(a)?.panorama).toEqual({ panoId: "start-pano", heading: 70 });
+    await command(ack => a.emit("guess:submit", { lat: location.lat, lng: location.lng, round: 1 }, ack));
+    await command(ack => b.emit("guess:submit", { lat: 0, lng: 0, round: 1 }, ack));
+    await vi.waitFor(() => expect(states.get(a)?.phase).toBe("reveal"));
+    expect(states.get(a)?.panorama).toBeUndefined();
+    expect(states.get(a)?.results[0].guesses[0].score).toBe(5000);
   });
   it("does not activate a pending selection after a player leaves", async () => {
     let resolve!: (value: GameLocation) => void;

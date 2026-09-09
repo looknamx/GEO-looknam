@@ -9,6 +9,7 @@ import { ScoreBoard } from "./score-board";
 import { pointSchema } from "@/lib/game";
 import type { Point } from "@/types/game";
 import { sceneUrl } from "@/lib/client-urls";
+const StreetView = dynamic(() => import("./google-street-view"), { ssr: false });
 export const LazyMap = dynamic(() => import("./adaptive-game-map"), {
   ssr: false,
   loading: () => (
@@ -78,7 +79,9 @@ export function GameRound() {
             </Button>
           </div>
           <div className="scene-image">
-            {imageError ? (
+            {room.mode === "google" && room.panorama ? (
+              <StreetView key={`${room.round}:${room.panorama.panoId}`} {...room.panorama} />
+            ) : imageError ? (
               <div className="map-loading">
                 <p>โหลดภาพไม่สำเร็จ</p>
                 <Button
@@ -97,7 +100,7 @@ export function GameRound() {
             )}
           </div>
           <div className="scene-footer">
-            <span className="live-dot" /> คุณและเพื่อนกำลังเห็นภาพเดียวกัน{" "}
+            <span className="live-dot" /> {room.mode === "google" ? "ลากเพื่อหมุน · กดลูกศรเพื่อเดิน · ทายจุดเริ่มต้น" : "คุณและเพื่อนกำลังเห็นภาพเดียวกัน"}{" "}
             <span
               className={
                 room.mode === "google" ? "google-attribution" : undefined

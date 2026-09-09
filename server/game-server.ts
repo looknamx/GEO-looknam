@@ -127,6 +127,7 @@ export class GameServer {
       this.close(room, "เซิร์ฟเวอร์กำลังปิด");
   }
   private state(room: Room, viewer?: Member): RoomState {
+    const current = room.locations[room.round - 1];
     return {
       code: room.code,
       hostId: room.hostId,
@@ -150,6 +151,11 @@ export class GameServer {
         ? `/api/scene/${room.assets[room.round - 1]}`
         : null,
       ownGuess: viewer?.guess ?? null,
+      // Interactive Street View needs the current pano ID in the browser.
+      // Never expose server keys, answer coordinates, or future rounds here.
+      panorama: room.phase === "playing" && current?.mode === "google" && current.panoId
+        ? { panoId: current.panoId, heading: current.heading ?? 0 }
+        : undefined,
       results: room.results,
       message: room.message,
       persisted: room.persisted,
