@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.next-dev/
+.env*
+!.env.example
+*.pem
+*.key
+*.db-wal
+*.db-shm
+.railway/
+*.db
+*.db-journal
+*.tsbuildinfo
+coverage/
+artifacts/

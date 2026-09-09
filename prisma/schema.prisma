@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url = env("DATABASE_URL")
+}
+model DemoLocation {
+  id String @id
+  name String
+  country String
+  category String
+  difficulty String
+  image String
+  lat Float
+  lng Float
+  description String
+  source String
+  credit String
+}
+model Match {
+  id String @id
+  roomCode String
+  finishedAt DateTime @default(now())
+  settings String
+  players String
+  results String
+}
+model RecentLocation {
+  key String @id
+  usedAt DateTime @default(now())
+  @@index([usedAt])
+}
