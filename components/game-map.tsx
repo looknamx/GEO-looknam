@@ -11,7 +11,7 @@ import {
 } from "react-leaflet";
 import type { Point, RoundResult } from "@/types/game";
 import "leaflet/dist/leaflet.css";
-const colors = ["#22d3ee", "#c084fc"];
+const colors = ["#22d3ee", "#c084fc", "#fb923c", "#4ade80"];
 export function GuessMarker({
   point,
   index = 0,

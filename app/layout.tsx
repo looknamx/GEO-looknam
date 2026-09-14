@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Where Are We? — โลกกว้าง แค่ทายให้เจอ",
   description:
-    "ชวนเพื่อนออกสำรวจโลก แข่งทายสถานที่จากภาพ แล้วปักหมุดคำตอบไปด้วยกัน เว็บเกมสำหรับสองคน",
+    "ชวนเพื่อนออกสำรวจโลก แข่งทายสถานที่ 2–4 คน ทีม 2v2 และโหมด HP เอาตัวรอด",
 };
 export default function RootLayout({
   children,

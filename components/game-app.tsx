@@ -114,10 +114,10 @@ export function GameApp() {
               {room.message}
             </div>
           )}
-          {room?.players.some((p) => !p.connected) && connected && (
+          {room?.players.some((p) => !p.connected && !p.forfeited) && connected && (
             <div className="alert" role="status">
               เพื่อนหลุดการเชื่อมต่อ กำลังรอกลับเข้าห้อง
-              หากไม่กลับมาภายในเวลาที่กำหนดจะยกเลิกการแข่งขัน
+              เวลาเดินต่อ หากไม่กลับมาภายในเวลาที่กำหนดจะถือว่าสละสิทธิ์ ผู้เล่นที่เหลือเล่นต่อได้
             </div>
           )}
           {!room ? (

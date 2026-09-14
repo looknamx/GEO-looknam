@@ -9,7 +9,10 @@ export async function saveMatch(id: string, state: RoomState) {
     create: {
       id,
       roomCode: state.code,
-      settings: JSON.stringify(state.settings),
+      settings: JSON.stringify({ ...state.settings, outcome: {
+        roundsPlayed: state.round, winnerIds: state.winnerIds,
+        teamScores: state.teamScores, teamHp: state.teamHp,
+      } }),
       players: JSON.stringify(state.players),
       // Persist scores, not Google imagery/coordinates/attribution content.
       results: JSON.stringify(persistableResults(state)),
@@ -23,6 +26,9 @@ export function persistableResults(state: RoomState) {
           round: result.round,
           guesses: result.guesses,
           winnerIds: result.winnerIds,
+          teamScores: result.teamScores,
+          damage: result.damage,
+          multiplier: result.multiplier,
           location: {
             mode: "google",
             id: result.location.id,

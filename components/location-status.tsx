@@ -23,13 +23,13 @@ export function LocationStatus() {
         <>
           <p>
             อนุญาตใช้สถานที่จากเกมก่อนเฉพาะเกมนี้ ไม่ล้างประวัติของห้องอื่น
-            และไม่อนุญาตให้ซ้ำในเกมเดียวกัน ({room.historyResetVotes.length}/2
+            {room.settings.victory === "hp" ? "โหมด HP: อนุญาตวนชุดโจทย์ที่ใช้แล้วเพื่อเล่นต่อ" : "และไม่อนุญาตให้ซ้ำในเกมเดียวกัน"} ({room.historyResetVotes.length}/{room.players.filter(p => p.connected && !p.forfeited && !p.eliminated).length}
             คนยืนยัน)
           </p>
           <Button
             variant="secondary"
             disabled={
-              pending || !connected || voted || room.players.length !== 2
+              pending || !connected || voted || !!room.players.find(p => p.id === playerId)?.eliminated
             }
             onClick={() =>
               void request((socket, ack) =>

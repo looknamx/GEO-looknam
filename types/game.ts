@@ -15,6 +15,10 @@ export type Location = Point & {
   credit: string;
 };
 export type Player = {
+  team?: number;
+  hp?: number;
+  eliminated?: boolean;
+  forfeited?: boolean;
   id: string;
   name: string;
   ready: boolean;
@@ -24,6 +28,9 @@ export type Player = {
   reconnectUntil?: number;
 };
 export type RoundResult = {
+  multiplier?: number;
+  damage?: Record<string, number>;
+  teamScores?: number[];
   round: number;
   location: Location;
   guesses: {
@@ -35,6 +42,10 @@ export type RoundResult = {
   winnerIds: string[];
 };
 export type RoomState = {
+  teamScores?: number[];
+  teamHp?: number[];
+  winnerIds?: string[];
+  supportedCapitals?: number;
   code: string;
   hostId: string;
   players: Player[];
@@ -61,6 +72,8 @@ export type Reply =
   | { ok: false; error: string };
 export type Ack = (response: Reply) => void;
 export interface ClientToServerEvents {
+  "player:team": (data: { team: number; playerId?: string }, ack: Ack) => void;
+  "usage:load": (data: { kind: "map" | "panorama" }, ack: Ack) => void;
   "room:create": (data: { name: string }, ack: Ack) => void;
   "room:join": (data: { name: string; code: string }, ack: Ack) => void;
   "room:settings": (data: Settings, ack: Ack) => void;

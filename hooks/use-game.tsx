@@ -42,6 +42,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const busy = useRef(false);
   useEffect(() => {
     const client: GameSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || undefined, { autoConnect: false });
+    const reportUsage = (event: Event) => {
+      const kind = (event as CustomEvent).detail;
+      if (client.connected && (kind === "map" || kind === "panorama")) client.emit("usage:load", { kind }, () => {});
+    };
+    window.addEventListener("waw-usage", reportUsage);
     try {
       const saved = sessionStorage.getItem(SESSION_KEY);
       session.current = saved ? (JSON.parse(saved) as Session) : null;
@@ -81,6 +86,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
     client.connect();
     return () => {
+      window.removeEventListener("waw-usage", reportUsage);
       client.removeAllListeners();
       client.disconnect();
     };

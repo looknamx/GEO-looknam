@@ -1,6 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap");
 
 .mobile-round-timer { display: none; }
+.fixed-view-shield { position: absolute; inset: 0; z-index: 3; background: transparent; }
+.match-status { padding: 10px 14px; margin-bottom: 12px; background: var(--surface); border-radius: 12px; }
+.avatar-2 { background: #fb923c33; color: #fb923c; }
+.avatar-3 { background: #4ade8033; color: #4ade80; }
+.score-board { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.summary-players { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 @media (max-width: 850px) {
   .mobile-round-timer {
     display: flex; align-items: center; justify-content: center; gap: 8px;

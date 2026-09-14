@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/google-maps-client";
 import { Button } from "./ui/button";
 
-export default function GoogleStreetView({ panoId, heading }: {
+export default function GoogleStreetView({ panoId, heading, movement = "walk" }: {
   panoId: string;
   heading: number;
+  movement?: "walk" | "no-move" | "fixed";
 }) {
   const container = useRef<HTMLDivElement>(null);
   const panorama = useRef<google.maps.StreetViewPanorama | null>(null);
@@ -24,10 +25,12 @@ export default function GoogleStreetView({ panoId, heading }: {
         pano: panoId,
         pov: { heading, pitch: 0 },
         zoom: 0,
-        linksControl: true,
-        clickToGo: true,
-        panControl: true,
-        zoomControl: true,
+        linksControl: movement === "walk",
+        clickToGo: movement === "walk",
+        panControl: movement !== "fixed",
+        zoomControl: movement !== "fixed",
+        scrollwheel: movement !== "fixed",
+        disableDoubleClickZoom: movement === "fixed",
         addressControl: false,
         showRoadLabels: false,
         fullscreenControl: false,
@@ -36,6 +39,17 @@ export default function GoogleStreetView({ panoId, heading }: {
         motionTrackingControl: false,
       });
       panorama.current = viewer;
+      window.dispatchEvent(new CustomEvent("waw-usage", { detail: "panorama" }));
+      viewer.addListener("pano_changed", () => {
+        if (movement !== "walk" && viewer && viewer.getPano() !== panoId) viewer.setPano(panoId);
+      });
+      viewer.addListener("pov_changed", () => {
+        const pov = viewer?.getPov();
+        if (movement === "fixed" && viewer && pov && (Math.abs(pov.heading - heading) > 0.01 || Math.abs(pov.pitch) > 0.01)) viewer.setPov({ heading, pitch: 0 });
+      });
+      viewer.addListener("zoom_changed", () => {
+        if (movement === "fixed" && viewer && viewer.getZoom() !== 0) viewer.setZoom(0);
+      });
       timer = setTimeout(fail, 15000);
       viewer.addListener("status_changed", () => {
         if (disposed) return;
@@ -58,10 +72,11 @@ export default function GoogleStreetView({ panoId, heading }: {
       }
       panorama.current = null;
     };
-  }, [panoId, heading, attempt]);
+  }, [panoId, heading, attempt, movement]);
 
   return <div className="street-view-container">
-    <div ref={container} className="street-view-canvas" aria-label="Street View หมุนดูและเดินสำรวจได้" />
+    <div ref={container} className="street-view-canvas" aria-label={movement === "walk" ? "Street View หมุนดูและเดินสำรวจได้" : movement === "no-move" ? "Street View หมุนดูได้ ห้ามเดิน" : "Street View มุมมองคงที่"} />
+    {movement === "fixed" && <div className="fixed-view-shield" aria-label="โหมดภาพนิ่ง ห้ามหมุน เดิน หรือซูม" />}
     {status === "ready" && <Button className="street-view-home" size="sm" variant="secondary" onClick={() => {
       panorama.current?.setPano(panoId);
       panorama.current?.setPov({ heading, pitch: 0 });

@@ -11,6 +11,10 @@ export const roomCodeSchema = z
   .toUpperCase()
   .regex(/^[A-HJ-NP-Z]{4}-[2-9]{4}$/, "รหัสห้องต้องอยู่ในรูปแบบ ABCD-2345");
 export const settingsSchema = z.object({
+  capacity: z.union([z.literal(2), z.literal(3), z.literal(4)]).default(4),
+  format: z.enum(["solo", "teams"]).default("solo"),
+  victory: z.enum(["points", "hp"]).default("points"),
+  movement: z.enum(["walk", "no-move", "fixed"]).default("walk"),
   mode: z.enum(["demo", "google"]).default("demo"),
   rounds: z.union([z.literal(3), z.literal(5), z.literal(10)]),
   seconds: z.union([z.literal(30), z.literal(60), z.literal(90)]),
@@ -22,6 +26,7 @@ export const pointSchema = z.object({
   lng: z.number().finite().min(-180).max(180),
 });
 export const DEFAULT_SETTINGS: z.infer<typeof settingsSchema> = {
+  capacity: 4, format: "solo", victory: "points", movement: "walk",
   mode: "demo",
   rounds: 5,
   seconds: 60,

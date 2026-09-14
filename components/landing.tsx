@@ -55,7 +55,7 @@ export function Landing() {
           transition={{ duration: 0.65 }}
         >
           <div className="eyebrow">
-            <span className="live-dot" /> TWO FRIENDS. ONE WORLD.
+            <span className="live-dot" /> FOUR FRIENDS. ONE WORLD.
           </div>
           <h1>
             โลกกว้างแค่ไหน
@@ -85,7 +85,7 @@ export function Landing() {
               <Check size={14} /> ไม่ต้องสมัครสมาชิก
             </span>
             <span>
-              <Check size={14} /> เล่นฟรีกับเพื่อน 2 คน
+              <Check size={14} /> เล่นกับเพื่อน 2–4 คน · ทีม 2v2
             </span>
           </div>
           <a className="text-link how-link" href="#how-to-play">

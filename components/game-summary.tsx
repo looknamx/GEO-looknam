@@ -7,7 +7,7 @@ export function GameSummary() {
   const { room, playerId, request, pending, connected, leave } = useGame();
   if (!room) return null;
   const best = Math.max(...room.players.map((p) => p.score));
-  const winners = room.players.filter((p) => p.score === best);
+  const winners = room.players.filter((p) => room.winnerIds ? room.winnerIds.includes(p.id) : p.score === best);
   return (
     <section className="room-page summary">
       <motion.div
@@ -22,17 +22,18 @@ export function GameSummary() {
         <div className="eyebrow">WHAT A JOURNEY!</div>
         <h1>
           {winners.length > 1
-            ? "สองนักสำรวจ ใจตรงกัน!"
-            : `${winners[0].name} คือนักสำรวจตัวจริง!`}
+            ? `ผู้ชนะ: ${winners.map(p => p.name).join(" & ")}`
+            : `${winners[0]?.name ?? "ไม่มีผู้ชนะ"} คือนักสำรวจตัวจริง!`}
         </h1>
         <p>
           {winners.length > 1
-            ? "จบทริปด้วยคะแนนเสมอกัน"
+            ? room.settings.format === "teams" ? "ผลการแข่งขันแบบทีม" : "จบทริปด้วยผลเสมอกัน"
             : "ผู้ชนะการเดินทางครั้งนี้"}{" "}
-          · {room.settings.rounds} รอบแห่งการค้นพบ
+          · {room.round} รอบแห่งการค้นพบ
         </p>
       </motion.div>
       <div className="summary-players">
+        {room.settings.format === "teams" && <div className="info-box">คะแนนทีม A {room.teamScores?.[0]} / B {room.teamScores?.[1]}{room.settings.victory === "hp" && <p>HP A {room.teamHp?.[0]} / B {room.teamHp?.[1]}</p>}</div>}
         {room.players.map((player, i) => {
           const guesses = room.results.flatMap((result) =>
             result.guesses.filter((g) => g.playerId === player.id),
@@ -56,7 +57,7 @@ export function GameSummary() {
           ).length;
           return (
             <div
-              className={`panel summary-player ${player.score === best ? "winner" : ""}`}
+              className={`panel summary-player ${winners.some(p => p.id === player.id) ? "winner" : ""}`}
               key={player.id}
             >
               <div className="summary-player-name">
@@ -66,13 +67,13 @@ export function GameSummary() {
                 <h2>
                   {player.name} {player.id === playerId && <small>(คุณ)</small>}
                 </h2>
-                {player.score === best && <Trophy size={20} />}
+                {winners.some(p => p.id === player.id) && <Trophy size={20} />}
               </div>
               <strong className="total-score">
                 {player.score.toLocaleString()}
                 <small>
                   {" "}
-                  / {(room.settings.rounds * 5000).toLocaleString()} คะแนน
+                  / {(room.round * 5000).toLocaleString()} คะแนน {room.settings.victory === "hp" ? `· HP ${player.hp}` : ""}
                 </small>
               </strong>
               <div className="summary-stats">
@@ -99,7 +100,7 @@ export function GameSummary() {
                 <div>
                   <span>ส่งคำตอบ</span>
                   <b>
-                    {distances.length} / {room.settings.rounds} รอบ
+                    {distances.length} / {room.round} รอบ
                   </b>
                 </div>
               </div>
@@ -148,6 +149,7 @@ export function GameSummary() {
           </table>
         </div>
         <p className="muted table-note">
+          {room.settings.victory === "hp" && "ตารางและสถิติระยะทางแสดงสูงสุด 200 รอบล่าสุด · คะแนนรวมและ HP รวมตลอดเกม · "}
           ระยะเฉลี่ยคิดจากรอบที่ส่งคำตอบเท่านั้น · รอบเสมอไม่นับเป็นรอบชนะ
         </p>
       </div>

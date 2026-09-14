@@ -30,7 +30,7 @@ export function GameRound() {
   const [coordinateError, setCoordinateError] = useState("");
   if (!room || !room.deadline) return null;
   const self = room.players.find((p) => p.id === playerId),
-    locked = !!self?.submitted || !connected;
+    locked = !!self?.submitted || !!self?.eliminated || !!self?.forfeited || !connected;
   const selected = room.ownGuess || point;
   const pick = (value: Point) => {
     setPoint(value);
@@ -48,10 +48,10 @@ export function GameRound() {
         </div>
         <div className="round-progress">
           <span>
-            รอบ <b>{room.round}</b> / {room.settings.rounds}
+            รอบ <b>{room.round}</b> / {room.settings.victory === "hp" ? "∞" : room.settings.rounds}
           </span>
           <div>
-            {Array.from({ length: room.settings.rounds }, (_, i) => (
+            {Array.from({ length: room.settings.victory === "hp" ? 0 : room.settings.rounds }, (_, i) => (
               <i key={i} className={i < room.round ? "active" : ""} />
             ))}
           </div>
@@ -62,7 +62,12 @@ export function GameRound() {
           initial={room.settings.seconds}
         />
       </div>
-      <ScoreBoard players={room.players} selfId={playerId} />
+      <ScoreBoard players={room.players} selfId={playerId} teams={room.settings.format === "teams"} hp={room.settings.victory === "hp"} />
+      <div className="match-status" role="status">ตอบแล้ว {room.players.filter(p => !p.eliminated && !p.forfeited && p.submitted).length}/{room.players.filter(p => !p.eliminated && !p.forfeited).length} คน
+        {room.settings.victory === "hp" && <span> · ความเสียหาย ×{room.round >= 9 ? 3 : room.round >= 5 ? 2 : 1}</span>}
+        {self?.eliminated && <span> · คุณเป็นผู้ชมจนจบเกม</span>}
+        {room.settings.format === "teams" && <p>ทีม A {room.settings.victory === "hp" ? `HP ${room.teamHp?.[0]}` : room.teamScores?.[0]} · ทีม B {room.settings.victory === "hp" ? `HP ${room.teamHp?.[1]}` : room.teamScores?.[1]}</p>}
+      </div>
       <div className={`round-layout ${expanded ? "photo-expanded" : ""}`}>
         <div className="scene panel">
           <div className="scene-header">
@@ -81,7 +86,7 @@ export function GameRound() {
           </div>
           <div className="scene-image">
             {room.mode === "google" && room.panorama ? (
-              <StreetView key={`${room.round}:${room.panorama.panoId}`} {...room.panorama} />
+              <StreetView key={`${room.round}:${room.panorama.panoId}`} {...room.panorama} movement={room.settings.movement} />
             ) : imageError ? (
               <div className="map-loading">
                 <p>โหลดภาพไม่สำเร็จ</p>
@@ -101,7 +106,7 @@ export function GameRound() {
             )}
           </div>
           <div className="scene-footer">
-            <span className="live-dot" /> {room.mode === "google" ? "ลากเพื่อหมุน · กดลูกศรเพื่อเดิน · ทายจุดเริ่มต้น" : "คุณและเพื่อนกำลังเห็นภาพเดียวกัน"}{" "}
+            <span className="live-dot" /> {room.mode === "google" ? room.settings.movement === "walk" ? "ลากเพื่อหมุน · กดลูกศรเพื่อเดิน · ทายจุดเริ่มต้น" : room.settings.movement === "no-move" ? "หมุนและซูมได้ · ห้ามเดิน" : "มุมมองคงที่ · ห้ามเดิน หมุน และซูม" : "คุณและเพื่อนกำลังเห็นภาพเดียวกัน"}{" "}
             <span
               className={
                 room.mode === "google" ? "google-attribution" : undefined

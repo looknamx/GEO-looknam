@@ -27,7 +27,7 @@ export function RoundResult() {
     <section className="room-page">
       <div className="page-heading">
         <div className="eyebrow">
-          ROUND {room.round} / {room.settings.rounds} · THE REVEAL
+          ROUND {room.round} / {room.settings.victory === "hp" ? "∞" : room.settings.rounds} · THE REVEAL
         </div>
         <h1>เฉลย: {result.location.name}</h1>
         <p>
@@ -41,6 +41,8 @@ export function RoundResult() {
           playerNames={room.players.map((p) => p.name)}
         />
         <div className="result-detail">
+          {room.settings.format === "teams" && <div className="info-box">รอบนี้ ทีม A +{result.teamScores?.[0] ?? 0} / ทีม B +{result.teamScores?.[1] ?? 0}<br />สะสม A {room.teamScores?.[0]} / B {room.teamScores?.[1]}{room.settings.victory === "hp" && <p>HP A {room.teamHp?.[0]} / B {room.teamHp?.[1]}</p>}</div>}
+          {room.settings.victory === "hp" && <div className="info-box">ความเสียหาย ×{result.multiplier}<br />{room.players.map(p => <p key={p.id}>{p.name}: HP {p.hp} (−{result.damage?.[room.settings.format === "teams" ? `team-${p.team}` : p.id] ?? 0}){p.eliminated ? " · ตกรอบ" : ""}</p>)}</div>}
           <div className="round-winner">
             <Trophy size={28} />
             <div>
@@ -83,14 +85,13 @@ export function RoundResult() {
               room.hostId !== playerId ||
               pending ||
               room.loading ||
-              !connected ||
-              !room.players.every((p) => p.connected)
+              !connected
             }
             onClick={() =>
               void request((socket, ack) => socket.emit("round:next", ack))
             }
           >
-            {room.round === room.settings.rounds
+            {(room.settings.victory === "points" && room.round >= room.settings.rounds) || (room.settings.format === "teams" ? new Set(room.players.filter(p => !p.eliminated && !p.forfeited).map(p => p.team)).size <= 1 : room.players.filter(p => !p.eliminated && !p.forfeited).length <= 1)
               ? "ดูผลการแข่งขัน"
               : "ออกเดินทางรอบถัดไป"}
             <ArrowRight size={18} />

@@ -15,8 +15,10 @@ export function randomPointAround(center: Point, radiusKm: number, random = Math
   return { lat: lat / rad, lng: ((lng / rad + 540) % 360) - 180 };
 }
 
-export function capitalCandidates(settings: Settings, count: number) {
-  const pool = shuffle(capitals.filter((capital) => settings.category !== "thailand" || capital[1] === "Thailand"));
+export function capitalCandidates(settings: Settings, count: number, recentCountries: readonly string[] = []) {
+  const available = capitals.filter((capital) => settings.category !== "thailand" || capital[1] === "Thailand");
+  const fresh = available.filter(capital => !recentCountries.includes(capital[1]));
+  const pool = shuffle(fresh.length ? fresh : available);
   const radiusKm = { easy: 5, normal: 12, hard: 25 }[settings.difficulty];
   return Array.from({ length: count }, (_, index) => {
     const [name, country, lat, lng] = pool[index % pool.length];

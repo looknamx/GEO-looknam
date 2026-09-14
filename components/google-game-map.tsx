@@ -46,6 +46,7 @@ export default function GoogleGameMap({
           gestureHandling: "cooperative",
         });
         setReady(true);
+        window.dispatchEvent(new CustomEvent("waw-usage", { detail: "map" }));
       })
       .catch(fail);
     return () => {
@@ -104,7 +105,7 @@ export default function GoogleGameMap({
       bounds.extend(result.location);
       result.guesses.forEach((guess, index) => {
         if (guess.point) {
-          const color = index === 0 ? "#22d3ee" : "#c084fc";
+          const color = ["#22d3ee", "#c084fc", "#fb923c", "#4ade80"][index % 4];
           marker(guess.point, color);
           bounds.extend(guess.point);
           lines.push(

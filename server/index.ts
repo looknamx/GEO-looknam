@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { startUsageReporting } from "../services/usage";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
@@ -161,6 +162,7 @@ async function main() {
     },
   );
   await prisma.$connect();
+  const stopUsage = startUsageReporting(() => ({ rooms: game.rooms.size, connections: io.engine.clientsCount }));
   server.listen(port, hostname, () =>
     console.log(
       `Where Are We? · ${dev ? "development" : "production"} · listening ${hostname}:${port}${dev ? `\nLocal: http://localhost:${port}` : ""}`,
@@ -169,6 +171,7 @@ async function main() {
   const stop = async () => {
     if (stopping) return;
     stopping = true;
+    stopUsage();
     const timeout = setTimeout(() => process.exit(1), 10_000);
     timeout.unref();
     game.dispose();

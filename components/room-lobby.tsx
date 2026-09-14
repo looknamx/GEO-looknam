@@ -14,12 +14,13 @@ export function RoomLobby() {
   const isHost = room.hostId === playerId,
     self = room.players.find((p) => p.id === playerId);
   const ready =
-    room.players.length === 2 &&
+    room.players.length >= 2 &&
+    (room.settings.format !== "teams" || (room.players.length === 4 && [0, 1].every(t => room.players.filter(p => p.team === t).length === 2))) &&
     room.players.every((p) => p.ready && p.connected);
   const change = (key: keyof Settings, value: string) => {
     const settings = {
       ...room.settings,
-      [key]: key === "rounds" || key === "seconds" ? Number(value) : value,
+      [key]: ["rounds", "seconds", "capacity"].includes(key) ? Number(value) : value,
     };
     void request((socket, ack) => socket.emit("room:settings", settings, ack));
   };
@@ -36,20 +37,14 @@ export function RoomLobby() {
             <h2>
               <Users size={20} /> เพื่อนร่วมทาง
             </h2>
-            <span className="pill">{room.players.length} / 2 คน</span>
+            <span className="pill">{room.players.length} / {room.settings.capacity} คน</span>
           </div>
-          <PlayerCard
-            player={room.players[0]}
-            index={0}
-            hostId={room.hostId}
-            selfId={playerId}
-          />
-          <PlayerCard
-            player={room.players[1]}
-            index={1}
-            hostId={room.hostId}
-            selfId={playerId}
-          />
+          {Array.from({ length: room.settings.capacity }, (_, index) => <div key={index}>
+            <PlayerCard player={room.players[index]} index={index} hostId={room.hostId} selfId={playerId} />
+            {room.settings.format === "teams" && room.players[index] && <p className="form-note">ทีม {(room.players[index].team ?? 0) === 0 ? "A" : "B"}</p>}
+            {room.settings.format === "teams" && room.players[index] && isHost && <label>จัดทีม {room.players[index].name}<select value={room.players[index].team ?? 0} disabled={pending || !connected || room.loading} onChange={e => void request((socket, ack) => socket.emit("player:team", { team: Number(e.target.value), playerId: room.players[index].id }, ack))}><option value={0}>ทีม A</option><option value={1}>ทีม B</option></select></label>}
+          </div>)}
+          {room.settings.format === "teams" && <label>ทีมของคุณ<select value={self?.team ?? 0} disabled={pending || !connected || room.loading} onChange={e => void request((socket, ack) => socket.emit("player:team", { team: Number(e.target.value) }, ack))}><option value={0}>ทีม A</option><option value={1}>ทีม B</option></select></label>}
           <div className="invite-box">
             <span>ส่งรหัสนี้ให้เพื่อน</span>
             <div>
@@ -104,6 +99,10 @@ export function RoomLobby() {
             </span>
           </div>
           <div className="settings-grid">
+            <label>รูปแบบ<select value={room.settings.format} disabled={!isHost || pending || !connected || room.loading} onChange={e => change("format", e.target.value)}><option value="solo">แข่งเดี่ยว 2–4 คน</option><option value="teams">ทีม 2 vs 2</option></select></label>
+            <label>ความจุห้อง<select value={room.settings.capacity} disabled={!isHost || pending || !connected || room.loading || room.settings.format === "teams"} onChange={e => change("capacity", e.target.value)}>{[2,3,4].map(n => <option key={n} value={n} disabled={n < room.players.length}>{n} คน</option>)}</select></label>
+            <label>การตัดสิน<select value={room.settings.victory} disabled={!isHost || pending || !connected || room.loading} onChange={e => change("victory", e.target.value)}><option value="points">คะแนนรวมตามจำนวนรอบ</option><option value="hp">HP เอาตัวรอด · ไม่จำกัดรอบ</option></select></label>
+            <label>การสำรวจ<select value={room.settings.movement} disabled={!isHost || pending || !connected || room.loading} onChange={e => change("movement", e.target.value)}><option value="walk">เดินและหมุนได้</option><option value="no-move">ห้ามเดิน · หมุนและซูมได้</option><option value="fixed">ห้ามเดิน หมุน และซูม</option></select></label>
             <label className="mode-setting">
               โหมดสถานที่
               <select
@@ -125,7 +124,7 @@ export function RoomLobby() {
               <select
                 value={room.settings.rounds}
                 onChange={(e) => change("rounds", e.target.value)}
-                disabled={!isHost || pending || !connected}
+                disabled={!isHost || pending || !connected || room.settings.victory === "hp"}
               >
                 {[3, 5, 10].map((n) => (
                   <option key={n} value={n}>
@@ -178,6 +177,10 @@ export function RoomLobby() {
             </label>
           </div>
           <div className="info-box">
+            <p>เมืองหลวงในชุดสุ่ม {room.supportedCapitals ?? 51} แห่ง · ลดประเทศซ้ำใน 2 รอบล่าสุดเมื่อมีตัวเลือก</p>
+            <p>{room.settings.format === "teams" ? "ทีมใช้คะแนนสูงสุดของสมาชิกในแต่ละรอบ" : "ผู้เล่นแต่ละคนส่งคำตอบของตัวเอง"}</p>
+            {room.settings.victory === "hp" && <p>HP 10,000 · เสียพลังตามส่วนต่างคะแนนจากผู้ชนะ · รอบ 5 ×2 / รอบ 9 ×3 · HP หมดดูเกมต่อได้ · หากโจทย์หมด ผู้เล่นต้องยืนยันก่อนนำกลับมาใช้</p>}
+            <p>ห้ามซ้ำภายในเกมคะแนน / ตรวจประวัติล่าสุดตามที่ตั้งไว้ · โหมดสำรวจมีผลกับ Google Street View</p>
             {room.settings.mode === "google" && ["world", "city", "thailand"].includes(room.settings.category) && <p>สุ่มรอบเมืองหลวง · ง่าย 5 กม. / ปกติ 12 กม. / ยาก 25 กม. · ประเทศไทยสุ่มรอบกรุงเทพฯ</p>}
             มองภาพเดียวกัน ปักหมุดคนละจุด
             <br />
@@ -205,7 +208,7 @@ export function RoomLobby() {
               ? "รอเจ้าของห้องเริ่มเกม"
               : ready
                 ? "ทุกคนพร้อมแล้ว ออกเดินทางกันเลย!"
-                : "ผู้เล่นทั้ง 2 คนต้องกดพร้อมก่อนเริ่มเกม"}
+                : "ผู้เล่นทุกคนต้องกดพร้อม · เดี่ยวอย่างน้อย 2 คน / ทีมครบ 2v2"}
           </p>
         </div>
       </div>

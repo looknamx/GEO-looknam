@@ -3,6 +3,7 @@ import { z } from "zod";
 import { googleSeeds } from "../data/google-seeds";
 import { haversine } from "../lib/game";
 import { capitalCandidates } from "./capital-candidates";
+import { usage } from "./usage";
 import {
   matchesFilters,
   PoolExhaustedError,
@@ -86,7 +87,7 @@ export class GoogleLocationProvider implements LocationProvider {
     const minimum = this.config.minDistanceKm ?? 1;
     const dynamic = !this.config.seeds && ["world", "city", "thailand"].includes(options.settings.category);
     const attempts = Math.max(1, Math.min(12, this.config.maxAttempts ?? 8));
-    const seeds: (typeof googleSeeds[number] & { center?: { lat: number; lng: number }; radiusKm?: number })[] = dynamic ? capitalCandidates(options.settings, attempts) : shuffle(
+    const seeds: (typeof googleSeeds[number] & { center?: { lat: number; lng: number }; radiusKm?: number })[] = dynamic ? capitalCandidates(options.settings, attempts, options.recentCountries) : shuffle(
       (this.config.seeds ?? googleSeeds).filter(
         (seed) =>
           matchesFilters(seed, options.settings) &&
@@ -95,6 +96,7 @@ export class GoogleLocationProvider implements LocationProvider {
           ),
       ),
     );
+    if (!dynamic) seeds.sort((a, b) => Number(options.recentCountries?.includes(a.country) ?? false) - Number(options.recentCountries?.includes(b.country) ?? false));
     if (!dynamic && seeds.length < options.remainingRounds)
       throw new PoolExhaustedError(
         "pool",
@@ -106,6 +108,7 @@ export class GoogleLocationProvider implements LocationProvider {
       options.signal?.throwIfAborted();
       let metadata: z.infer<typeof metadataSchema>;
       try {
+        usage.metadataRequests++;
         const response = await this.fetcher(googleMetadataUrl(seed, key), {
           signal: AbortSignal.any([
             AbortSignal.timeout(this.config.timeoutMs ?? 2500),
@@ -116,8 +119,10 @@ export class GoogleLocationProvider implements LocationProvider {
         if (!response.ok) throw new ProviderUnavailableError();
         metadata = metadataSchema.parse(await response.json());
       } catch {
+        usage.metadataFailures++;
         throw new ProviderUnavailableError();
       }
+      if (metadata.status !== "OK") usage.metadataFailures++;
       if (["ZERO_RESULTS", "NOT_FOUND"].includes(metadata.status)) continue;
       if (metadata.status !== "OK" || !metadata.location || !metadata.pano_id)
         throw new ProviderUnavailableError();
@@ -172,6 +177,7 @@ export class GoogleLocationProvider implements LocationProvider {
   ): Promise<{ bytes: Buffer; contentType: string }> {
     if (!this.config.serverKey) throw new ProviderUnavailableError();
     try {
+      usage.staticImageRequests++;
       const response = await this.fetcher(
         googleStaticUrl(
           location,

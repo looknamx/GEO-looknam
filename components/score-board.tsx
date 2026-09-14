@@ -3,9 +3,13 @@ import type { Player } from "@/types/game";
 export function ScoreBoard({
   players,
   selfId,
+  teams = false,
+  hp = false,
 }: {
   players: Player[];
   selfId: string | null;
+  teams?: boolean;
+  hp?: boolean;
 }) {
   return (
     <div className="score-board">
@@ -16,6 +20,7 @@ export function ScoreBoard({
           </span>
           <span>
             {player.name}
+            <small>{teams ? `ทีม ${player.team === 0 ? "A" : "B"} · ` : ""}{hp ? `HP ${player.hp ?? 10000}` : ""}{player.eliminated ? " · ออกจากการแข่งขัน" : ""}</small>
             {player.id === selfId ? " (คุณ)" : ""}
             <small>
               {!player.connected

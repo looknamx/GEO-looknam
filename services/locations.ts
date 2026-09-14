@@ -8,6 +8,7 @@ export type GameLocation = Location & {
   heading?: number;
 };
 export type LocationSelectionOptions = {
+  recentCountries?: readonly string[];
   settings: Settings;
   usedLocationKeys: ReadonlySet<string>;
   usedPositions: readonly Point[];
@@ -75,7 +76,9 @@ export class DemoLocationProvider implements LocationProvider {
         "history",
         `สถานที่ที่ไม่อยู่ในเกมล่าสุดเหลือ ${fresh.length} แห่ง ทั้งสองคนต้องยืนยันก่อนอนุญาตให้นำสถานที่จากเกมก่อนกลับมาใช้ หรือเปลี่ยนตัวกรอง`,
       );
-    const location = fresh[randomInt(fresh.length)];
+    const diverse = fresh.filter(location => !options.recentCountries?.includes(location.country));
+    const choices = diverse.length ? diverse : fresh;
+    const location = choices[randomInt(choices.length)];
     return { ...location, mode: "demo", key: `demo:${location.id}` };
   }
 }
