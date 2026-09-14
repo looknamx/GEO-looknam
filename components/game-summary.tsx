@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Home, RotateCcw, Trophy } from "lucide-react";
 import { useGame } from "@/hooks/use-game";
 import { Button } from "./ui/button";
+import { HpBar } from "./hp-bar";
 export function GameSummary() {
   const { room, playerId, request, pending, connected, leave } = useGame();
   if (!room) return null;
@@ -76,6 +77,7 @@ export function GameSummary() {
                   / {(room.round * 5000).toLocaleString()} คะแนน {room.settings.victory === "hp" ? `· HP ${player.hp}` : ""}
                 </small>
               </strong>
+              {room.settings.victory === "hp" && <HpBar value={player.hp ?? 0} />}
               <div className="summary-stats">
                 <div>
                   <span>ระยะห่างเฉลี่ย</span>

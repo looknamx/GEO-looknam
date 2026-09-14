@@ -28,6 +28,7 @@ export type Player = {
   reconnectUntil?: number;
 };
 export type RoundResult = {
+  hpBefore?: Record<string, number>;
   multiplier?: number;
   damage?: Record<string, number>;
   teamScores?: number[];
@@ -72,6 +73,7 @@ export type Reply =
   | { ok: false; error: string };
 export type Ack = (response: Reply) => void;
 export interface ClientToServerEvents {
+  "room:kick": (data: { playerId: string }, ack: Ack) => void;
   "player:team": (data: { team: number; playerId?: string }, ack: Ack) => void;
   "usage:load": (data: { kind: "map" | "panorama" }, ack: Ack) => void;
   "room:create": (data: { name: string }, ack: Ack) => void;

@@ -2,6 +2,7 @@
 import { ArrowRight, MapPin, Trophy } from "lucide-react";
 import { useGame } from "@/hooks/use-game";
 import { Button } from "./ui/button";
+import { HpBar } from "./hp-bar";
 import { LazyMap } from "./game-round";
 import type { RoundResult as Result } from "@/types/game";
 export function RoundResultMap({
@@ -77,6 +78,7 @@ export function RoundResult() {
               <span className="muted">
                 สะสม {room.players[index].score.toLocaleString()} คะแนน
               </span>
+              {room.settings.victory === "hp" && <HpBar key={room.round} value={room.players[index].hp ?? 0} initialValue={result.hpBefore?.[guess.playerId]} label={room.settings.format === "teams" ? `ทีม ${room.players[index].team === 0 ? "A" : "B"} HP` : "HP"} />}
             </div>
           ))}
           <Button

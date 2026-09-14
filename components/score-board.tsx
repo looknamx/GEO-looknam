@@ -1,5 +1,6 @@
 import { Trophy } from "lucide-react";
 import type { Player } from "@/types/game";
+import { HpBar } from "./hp-bar";
 export function ScoreBoard({
   players,
   selfId,
@@ -34,6 +35,7 @@ export function ScoreBoard({
             <Trophy size={14} />
             {player.score.toLocaleString()}
           </strong>
+          {hp && <HpBar value={player.hp ?? 10000} label={teams ? `ทีม ${player.team === 0 ? "A" : "B"} HP` : "HP"} />}
         </div>
       ))}
     </div>

@@ -5,11 +5,15 @@ export function PlayerCard({
   index,
   hostId,
   selfId,
+  teamControl,
+  kickControl,
 }: {
   player?: Player;
   index: number;
   hostId: string;
   selfId: string | null;
+  teamControl?: React.ReactNode;
+  kickControl?: React.ReactNode;
 }) {
   if (!player)
     return (
@@ -28,6 +32,7 @@ export function PlayerCard({
         {Array.from(player.name)[0]}
       </div>
       <div>
+        {teamControl}
         <strong>
           {player.name} {player.id === selfId && <small>(คุณ)</small>}{" "}
           {player.id === hostId && <Crown size={14} className="crown" />}
@@ -47,6 +52,7 @@ export function PlayerCard({
           "ยังไม่พร้อม"
         )}
       </span>
+      {kickControl}
     </div>
   );
 }

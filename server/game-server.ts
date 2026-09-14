@@ -437,6 +437,7 @@ export class GameServer {
     clearTimeout(room.timer);
     const location = room.locations.at(-1)!;
     const competitors = room.players.filter(p => !p.forfeited && !p.eliminated);
+    const hpBefore = Object.fromEntries(room.players.map(p => [p.id, p.hp ?? 10000]));
     const guesses = room.players.map((player) => {
       const distance = player.guess && !player.eliminated && !player.forfeited ? haversine(player.guess, location) : null;
       const score = distance === null ? 0 : scoreDistance(distance);
@@ -451,9 +452,8 @@ export class GameServer {
     const damage: Record<string, number> = {};
     if (room.settings.victory === "hp") {
       if (room.settings.format === "teams") {
-        const top = Math.max(...teamScores);
         teamScores.forEach((score, team) => {
-          const hit = (top - score) * multiplier;
+          const hit = (5000 - score) * multiplier;
           damage[`team-${team}`] = hit;
           room.teamHp[team] = Math.max(0, room.teamHp[team] - hit);
           room.players.filter(p => p.team === team).forEach(p => {
@@ -463,7 +463,7 @@ export class GameServer {
         });
       } else room.players.forEach(p => {
         if (p.eliminated || p.forfeited) return;
-        const hit = (best - (guesses.find(g => g.playerId === p.id)?.score ?? 0)) * multiplier;
+        const hit = (5000 - (guesses.find(g => g.playerId === p.id)?.score ?? 0)) * multiplier;
         damage[p.id] = hit;
         p.hp = Math.max(0, (p.hp ?? 10000) - hit);
         if (p.hp === 0) p.eliminated = true;
@@ -486,7 +486,7 @@ export class GameServer {
         image: `/api/scene/${room.assets.at(-1)}`,
       },
       guesses,
-      multiplier, damage, teamScores,
+      multiplier, damage, teamScores, hpBefore,
       winnerIds: room.settings.format === "teams"
         ? competitors.filter(p => teamScores[p.team ?? 0] === Math.max(...teamScores)).map(p => p.id)
         : guesses.filter(g => g.score === best && competitors.some(p => p.id === g.playerId)).map(g => g.playerId),
@@ -501,8 +501,8 @@ export class GameServer {
     clearTimeout(room.timer);
     room.deadline = null;
     const eligible = room.players.filter(p => !p.forfeited);
-    const rank = (p: Member) => room.settings.victory === "hp" ? (p.hp ?? 0) : room.settings.format === "teams" ? room.teamScores[p.team ?? 0] : p.score;
     const active = eligible.filter(p => !p.eliminated);
+    const rank = (p: Member) => room.settings.victory === "hp" && active.length ? (p.hp ?? 0) : room.settings.format === "teams" ? room.teamScores[p.team ?? 0] : p.score;
     const pool = this.contenders(room) <= 1 && active.length ? active : eligible;
     const best = Math.max(...pool.map(rank));
     room.winnerIds = pool.filter(p => rank(p) === best).map(p => p.id);
@@ -570,12 +570,19 @@ export class GameServer {
       const target = data.playerId ? room.players.find(p => p.id === data.playerId) : player;
       if (!target) throw new Error("ไม่พบผู้เล่น");
       if (target.team === team) return;
-      const otherTeam = room.players.filter(p => p.id !== target.id && p.team === team);
-      if (otherTeam.length >= 2) {
-        if (room.hostId !== player.id) throw new Error("ทีมนี้ครบแล้ว ให้เจ้าของห้องสลับสมาชิก");
-        otherTeam.at(-1)!.team = target.team;
-      }
       target.team = team;
+      room.players.forEach(p => p.ready = false);
+      this.broadcast(room);
+    }));
+    socket.on("room:kick", (data, ack) => run(ack, () => {
+      const room = this.host(socket);
+      if (room.phase !== "lobby" || room.loading) throw new Error("นำผู้เล่นออกได้ในห้องรอก่อนเริ่มเกม");
+      const id = z.uuid().parse(data?.playerId);
+      if (id === room.hostId) throw new Error("ใช้ปุ่มออกจากห้องเพื่อออกเอง");
+      const target = room.players.find(p => p.id === id);
+      if (!target) throw new Error("ไม่พบผู้เล่น");
+      if (target.socketId) this.io.sockets.sockets.get(target.socketId)?.emit("room:closed", "เจ้าของห้องนำคุณออก สามารถเข้าร่วมใหม่ด้วยรหัสเดิมได้");
+      this.remove(room, target);
       room.players.forEach(p => p.ready = false);
       this.broadcast(room);
     }));

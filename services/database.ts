@@ -28,6 +28,7 @@ export function persistableResults(state: RoomState) {
           winnerIds: result.winnerIds,
           teamScores: result.teamScores,
           damage: result.damage,
+          hpBefore: result.hpBefore,
           multiplier: result.multiplier,
           location: {
             mode: "google",

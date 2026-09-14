@@ -4,6 +4,7 @@ import { ArrowRight, Check, Copy, Settings2, Users } from "lucide-react";
 import { useGame } from "@/hooks/use-game";
 import { Button } from "@/components/ui/button";
 import { PlayerCard } from "./player-card";
+import { RoomQr } from "./room-qr";
 import { th } from "@/lib/i18n";
 import type { Settings } from "@/types/game";
 export function RoomLobby() {
@@ -40,11 +41,15 @@ export function RoomLobby() {
             <span className="pill">{room.players.length} / {room.settings.capacity} คน</span>
           </div>
           {Array.from({ length: room.settings.capacity }, (_, index) => <div key={index}>
-            <PlayerCard player={room.players[index]} index={index} hostId={room.hostId} selfId={playerId} />
-            {room.settings.format === "teams" && room.players[index] && <p className="form-note">ทีม {(room.players[index].team ?? 0) === 0 ? "A" : "B"}</p>}
-            {room.settings.format === "teams" && room.players[index] && isHost && <label>จัดทีม {room.players[index].name}<select value={room.players[index].team ?? 0} disabled={pending || !connected || room.loading} onChange={e => void request((socket, ack) => socket.emit("player:team", { team: Number(e.target.value), playerId: room.players[index].id }, ack))}><option value={0}>ทีม A</option><option value={1}>ทีม B</option></select></label>}
+            <PlayerCard player={room.players[index]} index={index} hostId={room.hostId} selfId={playerId}
+              teamControl={room.settings.format === "teams" && room.players[index] ? room.players[index].id === playerId ? <select className="inline-team" aria-label="ทีมของคุณ" value={self?.team ?? 0} disabled={pending || !connected || room.loading} onChange={e => void request((socket, ack) => socket.emit("player:team", { team: Number(e.target.value) }, ack))}><option value={0}>ทีม A</option><option value={1}>ทีม B</option></select> : <span className="team-label">ทีม {room.players[index].team === 0 ? "A" : "B"} </span> : null}
+              kickControl={isHost && room.players[index] && room.players[index].id !== playerId ? <Button size="sm" variant="ghost" disabled={pending || !connected || room.loading} onClick={() => {
+                const target = room.players[index];
+                if (window.confirm(`นำ ${target.name} ออกจากห้อง? ผู้เล่นสามารถเข้ากลับด้วยรหัสเดิมได้`)) void request((socket, ack) => socket.emit("room:kick", { playerId: target.id }, ack));
+              }}>นำออก</Button> : null}
+            />
           </div>)}
-          {room.settings.format === "teams" && <label>ทีมของคุณ<select value={self?.team ?? 0} disabled={pending || !connected || room.loading} onChange={e => void request((socket, ack) => socket.emit("player:team", { team: Number(e.target.value) }, ack))}><option value={0}>ทีม A</option><option value={1}>ทีม B</option></select></label>}
+          {room.settings.format === "teams" && <p className="form-note">ทีม A {room.players.filter(p => p.team === 0).length} คน / ทีม B {room.players.filter(p => p.team === 1).length} คน · เริ่มได้เมื่อครบทีมละ 2 คน</p>}
           <div className="invite-box">
             <span>ส่งรหัสนี้ให้เพื่อน</span>
             <div>
@@ -75,6 +80,7 @@ export function RoomLobby() {
                   : "ให้เพื่อนเปิดเว็บเดียวกัน แล้วเลือก “เข้าร่วมห้อง”"}
             </small>
           </div>
+          <RoomQr code={room.code} />
           <Button
             className="w-full"
             variant={self?.ready ? "secondary" : "default"}
@@ -179,7 +185,7 @@ export function RoomLobby() {
           <div className="info-box">
             <p>เมืองหลวงในชุดสุ่ม {room.supportedCapitals ?? 51} แห่ง · ลดประเทศซ้ำใน 2 รอบล่าสุดเมื่อมีตัวเลือก</p>
             <p>{room.settings.format === "teams" ? "ทีมใช้คะแนนสูงสุดของสมาชิกในแต่ละรอบ" : "ผู้เล่นแต่ละคนส่งคำตอบของตัวเอง"}</p>
-            {room.settings.victory === "hp" && <p>HP 10,000 · เสียพลังตามส่วนต่างคะแนนจากผู้ชนะ · รอบ 5 ×2 / รอบ 9 ×3 · HP หมดดูเกมต่อได้ · หากโจทย์หมด ผู้เล่นต้องยืนยันก่อนนำกลับมาใช้</p>}
+            {room.settings.victory === "hp" && <p>HP 10,000 · เสียพลัง (5,000 − คะแนนรอบนี้) × ตัวคูณ แม้ได้ใกล้สุด · รอบ 5 ×2 / รอบ 9 ×3 · HP หมดดูเกมต่อได้ · หากหมดพร้อมกันตัดสินด้วยคะแนนสะสม</p>}
             <p>ห้ามซ้ำภายในเกมคะแนน / ตรวจประวัติล่าสุดตามที่ตั้งไว้ · โหมดสำรวจมีผลกับ Google Street View</p>
             {room.settings.mode === "google" && ["world", "city", "thailand"].includes(room.settings.category) && <p>สุ่มรอบเมืองหลวง · ง่าย 5 กม. / ปกติ 12 กม. / ยาก 25 กม. · ประเทศไทยสุ่มรอบกรุงเทพฯ</p>}
             มองภาพเดียวกัน ปักหมุดคนละจุด

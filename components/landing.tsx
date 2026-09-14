@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowDown,
@@ -23,6 +23,16 @@ export function Landing() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [validation, setValidation] = useState("");
+  useEffect(() => {
+    const parsed = roomCodeSchema.safeParse(new URLSearchParams(window.location.search).get("room"));
+    if (!parsed.success) return;
+    const frame = requestAnimationFrame(() => {
+      setMode("join");
+      setCode(parsed.data);
+      document.getElementById("play")?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setValidation("");
