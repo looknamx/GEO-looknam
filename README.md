@@ -1,170 +1,219 @@
-# Where Are We? 🧭
+# 🧭 Where Are We? (GEO-looknam)
 
-เว็บเกมทายสถานที่สำหรับเพื่อน **2 คน** UI ภาษาไทย รองรับมือถือ มืด/สว่าง ห้องส่วนตัว พร้อมก่อนเริ่ม รีเฟรชกลับเข้าห้อง เฉลยคะแนน และเล่นใหม่ ใช้ Next.js App Router + TypeScript + Tailwind + Framer Motion, Socket.IO และ Prisma/SQLite โดยเว็บกับ Socket ใช้ Node.js process และพอร์ตเดียวกัน
+<p align="center">
+  <strong>เว็บเกมทายสถานที่ออนไลน์สำหรับผู้เล่น 2 คน (2-Player Real-time Geo-Guessing Web Game)</strong><br>
+  UI ภาษาไทย รองรับ Responsive มือถือ/เดสก์ท็อป และโหมดมืด/สว่าง พัฒนาด้วย Next.js App Router, Socket.IO และ Prisma
+</p>
 
-## เริ่มในเครื่อง
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-22.12+-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Next.js-App_Router-black?style=flat-square&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Socket.io-WebSocket-010101?style=flat-square&logo=socket.io&logoColor=white" alt="Socket.IO" />
+  <img src="https://img.shields.io/badge/Prisma-SQLite-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/TailwindCSS-Styled-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+</p>
 
-ใช้ Node.js 22.12+ และ npm (ตรวจบน Windows/Node.js 24)
+---
 
-```powershell
+## ✨ ฟีเจอร์หลัก (Key Features)
+
+- **1v1 Real-Time Multiplayer**: แข่งขันพร้อมกัน 2 คนแบบเรียลไทม์ผ่าน WebSockets (Socket.IO ฝังใน Node.js process เดียวกับ Web Server ไม่ต้องแยกเซิร์ฟเวอร์)
+- **ระบบห้องส่วนตัว & การกู้คืนการเชื่อมต่อ (Resilient Rooms)**:
+  - ระบบ Lobby ตรวจสอบความพร้อมของทั้งสองฝ่ายก่อนเริ่ม
+  - รีเฟรชเบราว์เซอร์หรือหลุดชั่วคราวกลับเข้าห้องเดิมได้อัตโนมัติด้วย `sessionStorage` + Reconnect Token (Grace period สูงสุด 60 วินาที)
+- **โหมดภาพและแผนที่แบบคู่ (Dual Provider)**:
+  - **Demo Mode**: คลังภาพ Wikimedia 24 แห่ง พร้อมแผนที่ Leaflet / OpenStreetMap เล่นได้ทันทีโดยไม่ต้องใช้ API Key
+  - **Google Mode**: ปักหมุดบน Google Maps พร้อมดึงภาพจริงผ่าน **Street View Static API**
+- **สถาปัตยกรรมป้องกันการโกงขั้นสูง (Anti-Cheat & Zero Leakage)**:
+  - คำนวณคะแนนและระยะห่างบน Server ทั้งหมด
+  - Client ไม่ได้รับพิกัดเฉลย, Panorama ID หรือ Google API Key โดยตรง ภาพจะถูกส่งผ่าน Opaque Image Stream Token (`/api/scene/<token>`)
+  - ภาพ Demo ถูกลบ EXIF, GPS Metadata, XMP และ IPTC ออกทั้งหมด
+- **ระบบ Fallback & Consent อัจฉริยะ**:
+  - สลับเป็น Demo Mode อัตโนมัติเมื่อ Google API ขัดข้อง, ไม่ได้ระบุคีย์ หรือโควตาหมด
+  - ระบบขอมติยืนยัน (Consent Vote) จากผู้เล่นทั้งสองคน เมื่อสถานที่ใหม่ตามเงื่อนไขหมดลง
+
+---
+
+## 🚀 เริ่มต้นใช้งานในเครื่อง (Local Setup)
+
+ต้องการ **Node.js 22.12+** (แนะนำ Node.js 24) และ `npm`
+
+```bash
+# 1. ติดตั้งแพ็กเกจ
 npm install
-Copy-Item .env.example .env
+
+# 2. คัดลอกไฟล์ Environment Variables
+# Windows PowerShell: Copy-Item .env.example .env
+# macOS/Linux:
+cp .env.example .env
+
+# 3. สร้าง Client, รัน Migrations และ Seed ภาพเริ่มต้น (24 สถานที่)
 npm run db:setup
+
+# 4. เริ่มระบบทั้ง Web และ Socket Server
 npm run dev
 ```
 
-อย่าเขียนทับ `.env` ที่มีอยู่ macOS/Linux ใช้ `cp` เปิด http://localhost:3000 คำสั่ง `npm run dev` เริ่มทั้งเว็บและ Socket ห้ามใช้ `next dev` แยก เพราะจะไม่มี multiplayer `db:setup` generate client → migrate → seed 24 ภาพโดยไม่ลบผลเกม
+> ⚠️ **คำเตือน**: ห้ามใช้คำสั่ง `next dev` แยกต่างหาก เพราะจะไม่มีระบบ Multiplayer Socket.IO ให้ใช้ `npm run dev` เท่านั้น
 
-**ฐานข้อมูลจากเวอร์ชันเดิมที่สร้างด้วย `db push`:** หยุด server และสำรอง `prisma/dev.db` ก่อน รันคำสั่งต่อไปนี้เพียงครั้งเดียวเมื่อฐานข้อมูลเดิมมีตาราง `DemoLocation` และ `Match` ตรงกับ initial migration แต่ยังไม่มีประวัติ migration (ฐานข้อมูลใหม่ไม่ต้องทำ)
+### สำหรับฐานข้อมูลเดิมที่เคยรันด้วย `db push`
+หากคุณมีฐานข้อมูลเดิมที่มีตาราง `DemoLocation` และ `Match` แต่ยังไม่มีประวัติการ Migrate ให้รันคำสั่งต่อไปนี้เพื่อ Resolve History:
 
-```powershell
-Copy-Item prisma/dev.db prisma/dev.backup.db
+```bash
+# สำรองข้อมูลเดิมก่อน
+cp prisma/dev.db prisma/dev.backup.db
+
+# ระบุ Migration ว่าได้รันไปแล้ว
 npx prisma migrate resolve --applied 202609090001_initial
+
+# อัปเดตโครงสร้าง
 npm run db:setup
 ```
 
-ฐานข้อมูลเดิมใน workspace นี้ดำเนินการแล้ว สำรองไว้ `artifacts/dev-before-history-migration.db` อย่ารัน reset หรือ db push ทับฐานข้อมูล production
+---
 
-## โหมดภาพและแผนที่
+## ⚙️ ตัวแปรสภาพแวดล้อม (Environment Variables)
 
-Host เลือก **Demo Mode / Google Street View** ใน lobby พร้อมจำนวนรอบ 3/5/10, เวลา 30/60/90 วินาที, ความยาก และหมวดสถานที่
+ดูตัวอย่างโครงสร้างได้ที่ `.env.example` (ห้าม Commit ไฟล์ `.env` หรือ Database ขึ้น Git)
 
-- Demo: ภาพ Wikimedia ในโปรเจกต์ 24 แห่ง + Leaflet/OpenStreetMap ใช้ได้โดยไม่ต้องมี key ภาพคำถามผ่าน server ที่ลบ EXIF/GPS/XMP/IPTC; พิกัดเป็นจุดอ้างอิงสถานที่ ไม่ใช่จุดยืนช่างภาพ เครดิตอยู่ `/credits`
-- Google: Google Maps สำหรับปักคำตอบ + **Street View Static API** ภาพจริงแบบนิ่ง มี attribution ของ Google อยู่ครบ ใช้ metadata ตรวจ panorama ปัจจุบันและใช้พิกัดที่ metadata คืนมาคำนวณคะแนน ไม่มีการหมุน/เดินใน panorama ในเวอร์ชันนี้
-- ไม่มี key ทั้งคู่ หรือ metadata/API/network/quota ผิดพลาด: server เปลี่ยนใช้ Demo อัตโนมัติพร้อมข้อความ หาก Demo ตามตัวกรองไม่พอก็แจ้งตรง ๆ
-- หากภาพ Google หรือแผนที่เสีย **หลังเริ่มรอบแล้ว** จะยกเลิกแมตช์ทั้งห้อง กลับ lobby แบบ Demo ให้ทั้งสองกดพร้อมใหม่ เพื่อไม่เปลี่ยนคำตอบระหว่างที่บางคนส่งไปแล้ว
+| ตัวแปร | ค่าเริ่มต้น / แนะนำ | รายละเอียดและความหมาย |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `file:./dev.db` | Local ใช้ `file:./dev.db`; บน Railway แนะนำ `file:/data/game.db` |
+| `PORT` | `3000` | พอร์ตเซิร์ฟเวอร์ (Railway จะจัดสรรให้อัตโนมัติ) |
+| `BIND_HOST` | `0.0.0.0` | Bind IP รองรับ Container และระบบ LAN |
+| `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` | *(ว่างไว้เพื่อเล่น Demo)* | Browser Key สำหรับโหลด Google Maps JS API บน Client |
+| `GOOGLE_MAPS_SERVER_KEY` | *(Secret Key)* | Server Key สำหรับดึงภาพจาก Street View Static API |
+| `GOOGLE_MAPS_SIGNING_SECRET` | *(Secret Key - ไม่บังคับ)* | Secret Key สำหรับเซ็น URL ฝั่ง Server เพิ่มความปลอดภัย |
+| `NEXT_PUBLIC_SOCKET_URL` | *(ว่างไว้)* | เว้นว่างไว้เพื่อให้ Client เชื่อมต่อผ่าน Same Origin เดียวกับหน้าเว็บ |
+| `CLIENT_ORIGIN` | `https://YOUR-DOMAIN` | โดเมนที่อนุญาตให้เชื่อมต่อ (Production ต้องเป็น HTTPS ไม่มี Slash ต่อท้าย) |
+| `LOCATION_HISTORY_STORAGE` | `memory` | การเก็บประวัติกันซ้ำ: `memory` หรือ `database` เพื่อคงค่าหลัง Restart |
+| `LOCATION_HISTORY_LIMIT` | `75` | ประวัติสถานที่ย้อนหลังที่ห้ามออกซ้ำ (แนะนำ 50–100 รายการ) |
+| `GOOGLE_MAX_ATTEMPTS` | `8` | จำนวนการลองหา Panorama สูงสุดต่อ 1 รอบ (ไม่เกิน 12 ครั้ง) |
+| `GOOGLE_MIN_DISTANCE_KM` | `1` | ระยะห่างขั้นต่ำ (กม.) เพื่อไม่ให้ภาพ Google อยู่ใกล้จุดที่เพิ่งเล่นไป |
+| `RECONNECT_GRACE_SECONDS` | `60` | ระยะเวลาที่รอให้ผู้เล่นกลับเข้าห้องก่อนยกเลิกแมตช์ |
 
-Google ใช้ seed ที่เขียนไว้ใน `data/google-seeds.ts` แล้วค้นหา outdoor panorama ภายใน 500 เมตร ตรวจพิกัดที่ได้ไม่ห่าง seed เกิน 600 เมตร ไม่มีการค้นหาแบบไม่จำกัด ค่าเริ่มต้นลองไม่เกิน 8 seed/รอบ แต่ละ metadata request timeout 2.5 วินาที มีเวลาเลือกโดยรวม 22 วินาที ถ้าพบ ZERO_RESULTS จะลอง seed ถัดไป การจัดระดับความยากเป็น editorial heuristic; ยังไม่ได้ตรวจภาพทุก seed ด้วยบัญชี Google จริง
+---
 
-### ตั้งค่า Google Cloud
+## 🗺️ การตั้งค่า Google Cloud Platform
 
-1. สร้าง Google Cloud project ผูก billing และเปิด **Maps JavaScript API** กับ **Street View Static API**
-2. สร้าง browser key แยก ตั้ง Application restriction เป็น **Websites / HTTP referrers** เช่น `http://localhost:3000/*` และ `https://YOUR-DOMAIN/*` จำกัด API ให้ใช้ Maps JavaScript API เท่านั้น ใส่ `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY`
-3. สร้าง server key อีกอัน จำกัด API ให้ใช้ Street View Static API ใส่ `GOOGLE_MAPS_SERVER_KEY` จำกัด IP ฝั่ง server เมื่อมี static outbound IP อย่าใช้ HTTP referrer restriction กับ server key; ตรวจ outbound IP ของแพลตฟอร์มก่อนกำหนด
-4. ถ้าเปิด URL signing ใส่ `GOOGLE_MAPS_SIGNING_SECRET` ฝั่ง server เท่านั้น ตั้ง quota และ billing alerts ใน Google Cloud
-5. หลังเปลี่ยน `NEXT_PUBLIC_*` ต้อง **build/deploy ใหม่** เพราะค่าถูกฝังใน client build ส่วน server key อ่านตอนเริ่ม process
+หากต้องการเปิดใช้งานโหมด Google Street View ให้ปฏิบัติตามคำแนะนำดังนี้:
 
-browser key มองเห็นได้ตามการออกแบบของ Google ต้องใช้ restrictions; server key และ signing secret ไม่ส่งผ่าน Socket/HTML/browser และไม่บันทึกฐานข้อมูล **ไม่มีช่องให้ Host กรอก secret** ใช้ environment ของผู้ดูแลเพื่อลดการรั่วใน browser/session/log
+1. **สร้าง Project และเปิดใช้งาน API**:
+   - เข้า Google Cloud Console และเปิดใช้งาน **Maps JavaScript API** และ **Street View Static API**
+2. **สร้าง Browser Key**:
+   - จำกัดสิทธิ์การใช้งาน (Application Restrictions) ให้เป็น **Websites / HTTP Referrers** เช่น `http://localhost:3000/*` และ `https://YOUR-DOMAIN/*`
+   - จำกัดขอบเขต API (API Restrictions) ให้เรียกได้เฉพาะ **Maps JavaScript API**
+   - นำคีย์ไปใส่ใน `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY`
+3. **สร้าง Server Key**:
+   - จำกัดขอบเขต API เฉพาะ **Street View Static API**
+   - ใส่ใน `GOOGLE_MAPS_SERVER_KEY` (ห้ามใช้ HTTP Referrer Restriction ฝั่งเซิร์ฟเวอร์ และไม่ส่งค่านี้ไปให้ Client)
+4. **Build ใหม่เสมอเมื่อแก้ไข Client Key**:
+   - ค่า `NEXT_PUBLIC_*` จะถูกประมวลผลและฝังลงใน Client Build ดังนั้นเมื่อแก้ไขต้องทำการ Rebuild/Redeploy เสมอ
 
-Metadata requests ไม่คิดค่าใช้จ่าย ส่วนการโหลด Maps และภาพ Static อาจมีค่าใช้จ่ายตาม billing ปัจจุบัน ผู้เล่นสองคนโหลดภาพแยกกัน และ refresh อาจโหลดใหม่ จำกัด scene Google สูงสุด 8 requests/รอบ ไม่ cache Google imagery บน disk/CDN/browser และไม่ตัด/แก้ attribution ดู [metadata](https://developers.google.com/maps/documentation/streetview/metadata), [Static API usage and billing](https://developers.google.com/maps/documentation/streetview/usage-and-billing), [Google policies](https://developers.google.com/maps/documentation/streetview/policies)
+---
 
-## ตัวแปรสภาพแวดล้อม
+## 📐 สถาปัตยกรรมและการคำนวณคะแนน (Architecture & Security)
 
-ดู `.env.example` ซึ่งไม่มี secret `.env*`, SQLite, key/pem และ artifacts ถูก ignore ไม่ต้อง commit `.env`
+### แผนภาพการไหลของข้อมูล (Data Flow)
 
-| ตัวแปร                                | ค่า/ความหมาย                                                                               |
-| ------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                        | local `file:./dev.db` สัมพันธ์กับ `prisma/`; Railway `file:/data/game.db`                  |
-| `PORT`                                | local 3000; Railway ให้ระบบกำหนด                                                           |
-| `BIND_HOST`                           | `0.0.0.0` รองรับ container/LAN; production ไม่ใช้ container `HOSTNAME`                     |
-| `NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY` | public Maps JavaScript key; เว้นว่างเล่น Demo                                              |
-| `GOOGLE_MAPS_SERVER_KEY`              | secret Street View Static key; runtime เท่านั้น                                            |
-| `GOOGLE_MAPS_SIGNING_SECRET`          | secret สำหรับเซ็น URL; optional                                                            |
-| `NEXT_PUBLIC_SOCKET_URL`              | ว่าง = origin เดียวกับเว็บ แนะนำแบบนี้; ถ้าระบุ production ต้องเป็น `https://YOUR-DOMAIN`  |
-| `CLIENT_ORIGIN`                       | allowed browser origins คั่น comma; production ต้อง HTTPS ไม่มี path; ว่างตรวจ same-origin |
-| `LOCATION_HISTORY_STORAGE`            | `memory` (default) หรือ `database` เพื่อคงประวัติหลัง restart                              |
-| `LOCATION_HISTORY_LIMIT`              | default 75, จำกัดสูงสุด 100 รายการ แนะนำ 50–100                                            |
-| `GOOGLE_MAX_ATTEMPTS`                 | default 8, สูงสุด 12 ต่อการเลือกหนึ่งรอบ                                                   |
-| `GOOGLE_MIN_DISTANCE_KM`              | default 1 กม. กัน Google panorama ที่อยู่ใกล้คำตอบก่อนหน้า                                 |
-| `RECONNECT_GRACE_SECONDS`             | default 60 วินาที                                                                          |
-| `ALLOWED_ORIGINS`, `HOSTNAME`         | รองรับ config local เดิม; ใช้ CLIENT_ORIGIN/BIND_HOST สำหรับ config ใหม่                   |
-
-## เล่นสองคนและสถานที่หมด
-
-1. เปิดแท็บแรก ตั้งชื่อ สร้างห้อง เปิดแท็บเปล่าใหม่แล้วพิมพ์ URL เพื่อเป็นผู้เล่นอีกคน (Duplicate Tab อาจคัดลอก session เดิม)
-2. ใส่ชื่อและรหัสห้อง Host ตั้งค่า ทั้งคู่กดพร้อม Host เริ่มเกม การเปลี่ยน settings รีเซ็ต ready
-3. ปักหมุดบนแผนที่ หรือกรอกพิกัด แล้วยืนยัน คำตอบล็อกหลังส่ง เฉลยเมื่อทั้งคู่ตอบหรือหมดเวลา
-4. Host ไปต่อแต่ละรอบ รอบสุดท้ายดูสรุป ผลบันทึกลง SQLite แล้วเล่นใหม่ได้
-5. รีเฟรชกลับเข้าผู้เล่นเดิมด้วย sessionStorage + private reconnect token เวลาเกมยังเดินต่อ หากไม่กลับภายใน grace period จะยกเลิกแมตช์
-
-ตัวกรองหมวดและความยากเป็น **เงื่อนไขตายตัว** ไม่มีการลดระดับหรือข้ามหมวดอัตโนมัติ สถานที่ไม่ซ้ำตลอดแมตช์โดยตรวจ ID/pano ID; Google ตรวจระยะห่างพิกัดด้วย ไม่วนชุดเดิมแม้ตั้ง 10 รอบ ชุด Demo บางหมวดมีไม่ถึง 3 รอบ UI จะแจ้งให้ลดรอบ/เปลี่ยนตัวกรอง
-
-ประวัติ recent ใช้ร่วมกันใน process ทุกห้อง ค่าเริ่มต้น 75 รายการ เก็บเฉพาะ ID และ timestamp ถ้าสถานที่สดไม่พอจะหยุดและแสดงปุ่มให้ **ผู้เล่นทั้งสองยืนยัน** ก่อนอนุญาตสถานที่จากเกมก่อนในแมตช์นี้ การโหวตคนเดียวหรือโหวตซ้ำไม่ปลดล็อก และการยืนยันไม่ล้างรายการที่ใช้ไปแล้วในแมตช์ปัจจุบัน ไม่ล้างประวัติส่วนกลางเงียบ ๆ เมื่อจบแมตช์ต้องขอ consent ใหม่หากจำเป็น
-
-เล่น LAN: ใช้ IP เครื่อง server เช่น `http://192.168.1.10:3000` บนอุปกรณ์ทั้งสอง และเปิดพอร์ต Node.js ใน Windows Firewall เฉพาะเครือข่ายที่ใช้ ต้องมีอินเทอร์เน็ตโหลดแผนที่และ Google Fonts
-
-## เตรียม Railway: หนึ่ง service + SQLite volume
-
-**ยังไม่ได้ deploy, commit หรือ push** ขั้นตอนต่อไปนี้ให้เจ้าของโปรเจกต์ดำเนินการเมื่อพร้อม ไม่เหมาะกับ static hosting/serverless ที่ไม่มี long-running WebSocket process
-
-1. ตรวจ `.gitignore` และรายการไฟล์ก่อนสร้าง private GitHub repository ด้วยตนเอง ห้ามเพิ่ม `.env`, DB, artifacts, server/signing keys ลง repository
-2. Railway → New Project → Deploy from GitHub repo → เลือก repo โฟลเดอร์โปรเจกต์นี้มี `Dockerfile` ที่ build Next และรัน Node/Socket ใน service เดียว ใช้ Dockerfile detection; ไม่ต้องใช้ `railway.json` (Config as Code ถูกประกาศ deprecated)
-3. เพิ่ม **Volume** mount path `/data` ให้ service นี้ แล้วตั้ง `DATABASE_URL=file:/data/game.db`, `BIND_HOST=0.0.0.0`, `LOCATION_HISTORY_STORAGE=database`, `LOCATION_HISTORY_LIMIT=75` ไม่ต้องกำหนด PORT เอง
-4. Generate Domain ใน Networking ให้เป็น HTTPS แล้วตั้ง `CLIENT_ORIGIN=https://YOUR-DOMAIN` ไม่ใส่ slash/path ค่า `NEXT_PUBLIC_SOCKET_URL` เว้นว่างเพื่อใช้ origin เดียวกัน Socket.IO จะใช้ HTTPS และ upgrade เป็น WSS ผ่าน Railway proxy
-5. ถ้าใช้ Google ใส่ keys ตามตารางใน Railway Variables จำกัด browser referrer ให้ตรง domain ใส่ browser key ก่อน build; Dockerfile ประกาศ ARG เฉพาะค่าที่เป็น public ไม่มี ARG/COPY สำหรับ server secret เปลี่ยน public vars/domain แล้ว deploy ใหม่
-6. ตั้ง **Replicas = 1**, healthcheck path **`/health`**, timeout เช่น 120 วินาที, restart policy On Failure และเวลา graceful shutdown อย่างน้อย 10 วินาทีเมื่อมีการตั้งค่านี้ ปล่อย Start Command ว่างเพื่อใช้ Dockerfile CMD
-7. CMD รัน `db:migrate` → `db:seed` → Node server ทุกครั้งที่เริ่ม หลัง volume mount แล้ว **อย่ารัน migrations ใน build/pre-deploy** เพราะ volume ไม่ได้ mount ในขั้นตอนเหล่านั้น migration เป็นไฟล์ versioned และ seed เป็น upsert
-8. Deploy แล้วเปิด `https://YOUR-DOMAIN/health` ต้องได้ `{"ok":true}` เปิดสองเครื่องทดสอบสร้างห้อง พร้อม ส่งคำตอบครบเกม รีเฟรช reconnect และตรวจว่าบันทึกผลสำเร็จ
-9. ทดสอบ redeploy: แมตช์ที่บันทึกและ recent history ต้องอยู่บน volume; ห้องที่กำลังเล่นจะหายเพราะเก็บใน memory สำรอง volume/SQLite ก่อนเปลี่ยน schema และติดตาม logs, disk, Google quota
-
-`/health` (รองรับ `/api/health` เดิม) ตรวจ DB ด้วย `SELECT 1` และคืน 503 เมื่อ DB ใช้ไม่ได้หรือกำลัง shutdown; ไม่ตรวจ Google เพื่อให้ Demo ยังให้บริการได้ SIGTERM/SIGINT ปิดห้อง หยุดคำขอภาพ ปิด Socket/HTTP รอการบันทึก และ disconnect Prisma ภายในกรอบ 10 วินาที
-
-Dockerfile ใช้ Node 22 Debian slim + OpenSSL มี Prisma CLI/tsx ใน runtime เพื่อ migrate/start ได้ ไม่ใช้ Next standalone ร่วมกับ custom server การตั้งหลาย replica ต้องเปลี่ยน SQLite/shared room state ก่อน เอกสาร: [Railway Dockerfiles](https://docs.railway.com/guides/dockerfiles), [Volumes](https://docs.railway.com/volumes), [Config as Code status](https://docs.railway.com/config-as-code/reference)
-
-## สถาปัตยกรรมและความลับของคำตอบ
-
-`LocationProvider.getNextLocation(options): Promise<GameLocation>` อยู่ `services/locations.ts` รับ settings, used IDs/positions, recent IDs, จำนวนรอบที่เหลือ และ AbortSignal มี Demo, Google และ fallback wrapper `GameServer` เรียกแบบ async ก่อนเปิดรอบ ป้องกัน start ซ้อนและผล async ที่กลับมาหลังออกจากห้อง
-
-คำตอบจริง, pano ID, Google URLs/keys อยู่ server ก่อนเฉลย Client ได้เฉพาะ opaque `/api/scene/<random-token>` กับสถานะเกม จึงไม่สามารถอ่านพิกัดจาก Street View URL หรือ Socket payload ได้ Guess map เริ่มจากพิกัดกลางทั่วไป ไม่มีการส่ง panorama options ไป client ส่วน browser key เป็น public ตามการออกแบบ API
-
-คะแนนคำนวณ server ด้วย Haversine รัศมี 6371.0088 กม. สูตร `round(5000 * exp(-distanceKm / 2000))` จำกัด 0–5000 ไม่ตอบได้ 0 ไม่รับคะแนน/เวลา/ตัวตนจาก payload ภาพรอบเก่า/อนาคตเรียกไม่ได้ public result เป็น whitelist ไม่มี pano/key แม้หลังเฉลย
-
-SQLite มี `DemoLocation`, `Match`, `RecentLocation`; เกมสดอยู่ memory ผล Google ที่บันทึกเก็บคะแนน/คำตอบผู้เล่นและชื่อ/ID seed ที่เขียนเอง ไม่เก็บภาพหรือพิกัดคำตอบจาก Google ถ้า DB บันทึกไม่สำเร็จ UI แจ้งแต่ยังดูสรุปได้ ประวัติ recent ใน DB เก็บ pano ID ที่อนุญาตให้เก็บได้และ timestamp โดยจำกัดจำนวน ไม่มี Google image caching
-
-ไฟล์สำคัญ:
-
-```text
-server/index.ts                 HTTP, Socket.IO, scene proxy, health, shutdown
-server/game-server.ts           authoritative rooms, async rounds, consent
-server/origin-policy.ts         production HTTPS/CORS checks
-services/locations.ts           async provider interface + strict Demo/fallback
-services/google-locations.ts    metadata retries, panorama dedup, signed static image
-services/location-history.ts    bounded memory history
-services/database.ts            Prisma persistence + bounded DB history
-data/google-seeds.ts            authored candidate coordinates
-components/adaptive-game-map.tsx Google/Leaflet selection
-components/google-game-map.tsx  Google guess/reveal map
-components/location-status.tsx  loading, exhaustion, two-player consent
-lib/google-maps-client.ts       browser script loader/auth failure
-app/terms, app/privacy          public terms/privacy pages
-prisma/migrations/             initial schema + recent history
-Dockerfile, .dockerignore       Railway container preparation
+```
+[ Player A ] <==== WebSocket (Socket.IO) ====> [ Game Server (Authoritative) ]
+[ Player B ] <==== WebSocket (Socket.IO) ====> [ (Node.js + Next.js Server)   ]
+                                                        │
+                      ┌─────────────────────────────────┴─────────────────────────────────┐
+                      ▼                                                                   ▼
+       [ LocationProvider (Async) ]                                            [ Prisma ORM & SQLite ]
+       ├─ Demo: Wikimedia (Strip EXIF)                                         ├─ Matches
+       └─ Google: Street View Static                                           ├─ DemoLocations
+            (Opaque Proxy URL /api/scene/<token>)                              └─ RecentLocations History
 ```
 
-Socket client events เดิมคงอยู่ เพิ่ม `room:history-reset` และ `room:demo-fallback` ทุก command มี ack `{ok,error?,session?}` ไม่มี API key payload
+### การคำนวณคะแนน (Haversine Formula)
+คำนวณระยะทางบนผิวโลกด้วยสูตร Haversine บน Server โดยกำหนดรัศมีเฉลี่ยของโลก $R = 6371.0088 \text{ km}$:
 
-## ตรวจสอบ
+$$\text{Score} = \text{round}\left(5000 \times \exp\left(-\frac{\text{distanceKm}}{2000}\right)\right)$$
+
+- คะแนนเต็ม 5,000 คะแนนต่อรอบ
+- ไม่มีการส่งพิกัดคำตอบหรือคะแนนจาก Client ไปยัง Server (Server เป็นผู้ตัดสินคนเดียว)
+
+---
+
+## 🚂 คู่มือการ Deploy บน Railway (Single Service + Persistent Volume)
+
+ระบบนี้ใช้ Node.js รันทั้ง Next.js และ Socket.IO ในพอร์ตเดียวกัน จึงเหมาะกับการ deploy แบบ Container บน Platform อย่าง Railway
+
+1. **สร้าง Project**: ไปที่ Railway → New Project → Deploy from GitHub Repo
+2. **เพิ่ม Persistent Volume**:
+   - เพิ่ม Volume ให้ Service และตั้ง Mount Path เป็น `/data`
+   - กำหนด Environment Variable: `DATABASE_URL=file:/data/game.db`
+3. **กำหนดตัวแปรสภาพแวดล้อม**:
+   - `BIND_HOST=0.0.0.0`
+   - `LOCATION_HISTORY_STORAGE=database`
+   - `LOCATION_HISTORY_LIMIT=75`
+   - สร้าง Domain ในเมนู Networking (HTTPS) แล้วนำมากำหนด `CLIENT_ORIGIN=https://YOUR-DOMAIN`
+   - เว้นค่า `PORT` และ `NEXT_PUBLIC_SOCKET_URL` ไว้
+4. **ตั้งค่า Service Settings**:
+   - **Replicas**: ตั้งเป็น `1` (เนื่องจาก SQLite และ State ของห้องเล่นสดทำงานใน Memory เดียวกัน)
+   - **Healthcheck Path**: `/health` (Timeout 120s)
+   - **Graceful Shutdown**: ตั้งเวลา Timeout อย่างน้อย 10 วินาที
+   - **Start Command**: เว้นว่างไว้เพื่อใช้ CMD จาก `Dockerfile` (ซึ่งจะสั่งรัน `db:migrate` → `db:seed` → `server` อัตโนมัติ)
+
+---
+
+## 🧪 การตรวจสอบและทดสอบระบบ (Verification)
 
 ```powershell
+# ตรวจสอบ Code Style และ Type
 npm run lint
 npm run typecheck
+
+# รัน Automated Test Suite (49+ Tests)
 npm test
+
+# ตรวจสอบ Migration บน DB ทดสอบ
 node scripts/verify-migrations.mjs
+
+# ทดสอบรัน Production Build
 npm run build
 npm start
-# อีก terminal ขณะ server ทำงาน
+
+# รัน Smoke Test (เปิดอีก Terminal เพื่อทดสอบการเล่นรอบจริงและการเชื่อมต่อ Socket)
 node scripts/smoke.mjs
 ```
 
-หยุด dev ก่อน start เพื่อคืนพอร์ต หาก regenerate Prisma บน Windows ให้หยุด server เพื่อเลี่ยง DLL lock `verify-migrations` สร้าง DB ทดสอบแยกใน artifacts ไม่แตะ DB เกม; smoke สร้างผลเกมชื่อ Smoke A/B ใน DB ที่ server ใช้อยู่ ตั้ง `SMOKE_URL` เมื่อต้องการ URL อื่น
+---
 
-Production บังคับ browser origin เป็น HTTPS จึงต้องเปิดผ่าน HTTPS proxy/domain หากทดสอบ UI ของ production ในเครื่อง ใช้ `npm run dev` สำหรับ UI ที่ `http://localhost:3000`; smoke script ตรวจ production ผ่าน HTTP ภายในได้เพราะเป็น server client ที่ไม่มี browser Origin
+## 📁 ผังโครงสร้างโปรเจกต์ (Project Structure)
 
-ผลตรวจรอบนี้: lint, typecheck, 49 tests, production build ผ่าน; migrations + seed บน DB ใหม่ผ่าน; smoke ทั้ง dev/production ผ่าน HTTP ภาพจริง ผู้เล่นสองคนสามรอบ และ SQLite; ตรวจ UI สองแท็บเลือก Google โดยไม่มี keys แล้ว fallback เป็น Demo ผ่าน
+```text
+├── server/
+│   ├── index.ts                  # HTTP Server, Socket.IO, Scene Proxy และ Graceful Shutdown
+│   ├── game-server.ts            # การจัดการสถานะห้อง, Turn Lifecycle และมติความยินยอม (Consent)
+│   └── origin-policy.ts          # การตรวจสอบความปลอดภัย CORS และ Origin
+├── services/
+│   ├── locations.ts              # Abstract Location Provider Interface
+│   ├── google-locations.ts       # ระบบดึงภาพ, คัดกรอง Panorama และลงนาม Street View URL
+│   ├── location-history.ts       # ระบบบันทึกประวัติสถานที่กันซ้ำแบบจำกัดขนาด
+│   └── database.ts               # Prisma Client สำหรับจัดการ SQLite
+├── components/
+│   ├── adaptive-game-map.tsx     # ตัวเลือกแผนที่ระหว่าง Google Maps และ Leaflet
+│   ├── google-game-map.tsx       # แผนที่สำหรับเดาและเฉลยโหมด Google
+│   └── location-status.tsx       # สถานะการโหลดภาพและกล่องขอมติกรณีภาพหมด
+├── data/
+│   ├── google-seeds.ts           # พิกัดเป้าหมายสำหรับการค้นหาภาพ Street View กลางแจ้ง
+│   └── locations.json            # ข้อมูลพิกัดและรายละเอียดของภาพใน Demo Mode
+├── prisma/
+│   ├── schema.prisma             # โครงสร้างฐานข้อมูล
+│   └── migrations/               # ประวัติการ Migrate
+└── Dockerfile                    # การกำหนดค่า Container สำหรับ Production
+```
 
-Tests ครอบคลุม scoring/validation, image metadata, strict filtering, no key, Google metadata/API failure/quota/timeout, bounded retries, pano/proximity/history dedup, URL signing, CORS, และ Socket.IO จริงสอง client รวมถึงทั้งสองโหวต ไม่รับสถานที่ซ้ำจาก provider ที่ผิดพลาด และ async cancellation
+---
 
-ข้อจำกัดการตรวจ: ไม่มี Google keys ในเครื่อง จึงยังไม่ยืนยันภาพ/Maps ด้วย billing project จริง ใช้ mocked HTTP response ทดสอบ Google logic เครื่องนี้ไม่มี Docker CLI จึงยังไม่ได้ build/run container หรือทดสอบ Railway deployment จริง
+## ⚠️ ข้อจำกัดและข้อควรระวัง
 
-## ข้อจำกัดที่ยังเหลือ
-
-- ห้องสดหายเมื่อ server restart; ไม่มีหลาย replicas, Redis, บัญชีผู้ใช้ หรือ UI ประวัติย้อนหลัง SQLite volume เก็บเฉพาะข้อมูลถาวร
-- จำนวน seed ไม่รับประกันว่าทุกจุดมี panorama หรือเปิดใช้ครบ 10 รอบตามตัวกรองได้ API จะตรวจตอนเล่นและแจ้งเมื่อหาไม่ได้ ต้องตรวจ seed/heading/ความยากเพิ่มก่อนเปิดบริการกว้าง
-- การไม่ซ้ำ recent เป็น best effort ข้ามห้องที่เริ่มพร้อมกัน แต่ภายในแมตช์ตรวจซ้ำอย่างเคร่งครัด แมตช์ที่ยกเลิกยังนับสถานที่ที่เปิดไปใน recent history
-- ภาพ Static ไม่มีการเดินหรือหมุน; ไม่มีการป้องกัน reverse image search หรือการโกงจากความรู้ dataset
-- ผู้ดูแลต้องตรวจ `/terms` และ `/privacy` ให้ตรงบริการจริง รวมระยะเก็บข้อมูล ช่องทางติดต่อ และข้อกำหนด Google ก่อนเปิดสาธารณะ
-- Demo ใช้ OSM สาธารณะพร้อม attribution; เลือก tile service ตามปริมาณการใช้งานหากเปิดกว้าง UI ภาษาไทยเป็นหลัก ยังไม่มีสวิตช์ภาษา
-
-เครดิตภาพ Demo ดู `/credits` และ `data/locations.json` หากดาวน์โหลดใหม่ใช้ `node scripts/fetch-demo.mjs` ไม่ต้องรันเพื่อเริ่มเกม
-#   G E O - l o o k n a m  
- 
+1. **State ของห้องในเกมสด**: ห้องที่กำลังเล่นอยู่จะถูกเก็บไว้ในหน่วยความจำ (RAM) หากรีสตาร์ตเซิร์ฟเวอร์ ห้องที่กำลังเล่นจะสิ้นสุดลงทันที (ข้อมูลที่คงอยู่คือผลแมตช์ที่เล่นจบแล้วบน Volume)
+2. **Street View เป็นภาพนิ่ง**: ภาพในโหมด Google ให้บริการเป็นภาพนิ่ง ไม่สามารถแพนกล้องหรือเดินสำรวจรอบทิศทางได้
+3. **จำนวน Seed ของ Google**: พิกัดใน `google-seeds.ts` เป็นเพียงพิกัดเป้าหมาย หาก Google ไม่มีภาพที่ผ่านเงื่อนไขในรัศมีที่กำหนด ระบบจะสลับไปใช้ภาพถัดไปหรือเปลี่ยนเป็น Demo Mode
+4. **เครดิตภาพ Demo**: ข้อมูลลิขสิทธิ์และที่มาของภาพทั้งหมดใน Demo Mode สามารถตรวจสอบได้ที่เส้นทาง `/credits`
