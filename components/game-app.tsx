@@ -139,7 +139,7 @@ export function GameApp() {
             <span>โลกใบเดิม มุมมองใหม่ เมื่อไปด้วยกัน</span>
           </span>
           <span>
-            สร้างมาเพื่อหลงทางกับเพื่อน <span className="footer-star">✦</span>
+            © 2026 looknam_x. สงวนลิขสิทธิ์ทั้งหมด <span className="footer-star">✦</span>
             <a href="/credits" target="_blank" rel="noreferrer">
               เครดิตภาพ
             </a>
