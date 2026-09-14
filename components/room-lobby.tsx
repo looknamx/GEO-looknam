@@ -178,6 +178,7 @@ export function RoomLobby() {
             </label>
           </div>
           <div className="info-box">
+            {room.settings.mode === "google" && ["world", "city", "thailand"].includes(room.settings.category) && <p>สุ่มรอบเมืองหลวง · ง่าย 5 กม. / ปกติ 12 กม. / ยาก 25 กม. · ประเทศไทยสุ่มรอบกรุงเทพฯ</p>}
             มองภาพเดียวกัน ปักหมุดคนละจุด
             <br />
             คะแนนสูงสุด 5,000 ต่อรอบ · เฉลยพร้อมกัน

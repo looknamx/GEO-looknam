@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { z } from "zod";
 import { googleSeeds } from "../data/google-seeds";
 import { haversine } from "../lib/game";
+import { capitalCandidates } from "./capital-candidates";
 import {
   matchesFilters,
   PoolExhaustedError,
@@ -83,7 +84,9 @@ export class GoogleLocationProvider implements LocationProvider {
     const key = this.config.serverKey;
     if (!key) throw new ProviderUnavailableError();
     const minimum = this.config.minDistanceKm ?? 1;
-    const seeds = shuffle(
+    const dynamic = !this.config.seeds && ["world", "city", "thailand"].includes(options.settings.category);
+    const attempts = Math.max(1, Math.min(12, this.config.maxAttempts ?? 8));
+    const seeds: (typeof googleSeeds[number] & { center?: { lat: number; lng: number }; radiusKm?: number })[] = dynamic ? capitalCandidates(options.settings, attempts) : shuffle(
       (this.config.seeds ?? googleSeeds).filter(
         (seed) =>
           matchesFilters(seed, options.settings) &&
@@ -92,14 +95,15 @@ export class GoogleLocationProvider implements LocationProvider {
           ),
       ),
     );
-    if (seeds.length < options.remainingRounds)
+    if (!dynamic && seeds.length < options.remainingRounds)
       throw new PoolExhaustedError(
         "pool",
         "จุดสุ่ม Google ตามตัวกรองไม่พอสำหรับรอบที่เหลือ กรุณาลดรอบหรือเปลี่ยนตัวกรอง",
       );
     let historySkipped = false,
       duplicateSkipped = false;
-    for (const seed of seeds.slice(0, this.config.maxAttempts ?? 8)) {
+    for (const seed of seeds.slice(0, attempts)) {
+      options.signal?.throwIfAborted();
       let metadata: z.infer<typeof metadataSchema>;
       try {
         const response = await this.fetcher(googleMetadataUrl(seed, key), {
@@ -132,6 +136,7 @@ export class GoogleLocationProvider implements LocationProvider {
         continue;
       }
       if (haversine(seed, metadata.location) > 0.6) continue;
+      if (seed.center && seed.radiusKm && haversine(seed.center, metadata.location) > seed.radiusKm) continue;
       return {
         id: seed.id,
         key: locationKey,

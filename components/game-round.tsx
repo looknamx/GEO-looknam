@@ -40,6 +40,7 @@ export function GameRound() {
   };
   return (
     <section className="game-page">
+      <CountdownTimer key={`mobile:${room.deadline}`} compact deadline={room.deadline} clockOffset={clockOffset} initial={room.settings.seconds} />
       <div className="game-heading">
         <div>
           <div className="eyebrow">TRUST YOUR INSTINCT</div>
