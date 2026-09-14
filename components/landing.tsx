@@ -154,12 +154,12 @@ export function Landing() {
       <section className="world-strip">
         <span>
           <Globe2 size={21} />
-          <b>24</b> จุดหมายทั่วโลก
+          <b>500+</b> จุดหมายทั่วโลก
         </span>
         <i />
         <span>
           <Users size={21} />
-          <b>2</b> นักสำรวจ
+          <b>2-4</b> นักสำรวจ
         </span>
         <i />
         <span>
